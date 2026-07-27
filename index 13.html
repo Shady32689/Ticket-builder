@@ -1,0 +1,1717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#F9FAFC" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<title>Ticket Builder</title>
+<link rel="icon" type="image/png" href="/favicon.png" />
+<link rel="apple-touch-icon" href="/icon.png" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; background: #F9FAFC; }
+  * { -webkit-tap-highlight-color: transparent; }
+  input, textarea, select, button { font-family: inherit; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect } = React;
+
+// ---------- constants ----------
+const MACHINES = ["DX8000", "PAX A920", "P400"];
+const TICKET_TYPES = [
+  "Machine allocation",
+  "Change rates",
+  "Order paper rolls",
+  "Enable MOTO",
+  "Enable refunds",
+];
+const EMPTY_MERCHANT = {
+  id: null,
+  mid: "",
+  name: "",
+  address: "",
+  sevenDay: false,
+  integrated: false,
+  posName: "",
+  integrationType: "cloud",
+  contact: "",
+  defaultMachine: "DX8000",
+};
+
+const S = {
+  bg: "#F9FAFC",
+  panel: "#FFFFFF",
+  panel2: "#F1F2F8",
+  line: "#E2E4EF",
+  ink: "#23262B",
+  dim: "#6E7391",
+  accent: "#4F4DDC",
+  accentSoft: "#4F4DDC",
+  teal: "#14ADCD",
+  green: "#14ADCD",
+  orange: "#FF9A0C",
+  danger: "#FF5139",
+  paper: "#FFFFFF",
+  paperInk: "#23262B",
+};
+
+// ---------- storage helpers (localStorage) ----------
+const SEED_MERCHANTS = [{"id": "gpv-1915-lanzhou-beef-noodle-international", "mid": "N56124 / N57086", "name": "1915 Lanzhou Beef Noodle International", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-1915-lanzhou-noodles", "mid": "N56356 / N57085", "name": "1915 Lanzhou Noodles", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-5-star-mini-mart", "mid": "N55796", "name": "5 Star Mini-Mart", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-5-stars-coffee-nuts", "mid": "N54899", "name": "5 Stars Coffee & Nuts", "sevenDay": true, "integrated": true, "defaultMachine": "P400"}, {"id": "gpv-5-stars-nuts-supermarket", "mid": "N54729", "name": "5 Stars Nuts Supermarket", "sevenDay": true, "integrated": true, "defaultMachine": "P400"}, {"id": "gpv-abdo-s-florist", "mid": "N58718", "name": "Abdo’s Florist", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-abra-grillz", "mid": "N58668 / N58671", "name": "Abra Grillz", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-abu-salim-fresh-fruits-pty-ltd", "mid": "N54597 / N58255", "name": "ABU SALIM FRESH FRUITS PTY LTD", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-abu-salim-guildford", "mid": "N56764", "name": "Abu Salim Guildford", "sevenDay": true, "integrated": true, "defaultMachine": "P400"}, {"id": "gpv-abu-salim-mt-druit", "mid": "N56781", "name": "Abu Salim Mt Druit", "sevenDay": true, "integrated": true, "defaultMachine": "P400"}, {"id": "gpv-afiouni-sweets", "mid": "V58260 / V58261", "name": "Afiouni Sweets", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-al-alamy", "mid": "V57278 / V57279", "name": "Al Alamy", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-al-amin-supermarket", "mid": "N58242", "name": "Al Amin Supermarket", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-al-aseel-express", "mid": "N58092", "name": "Al Aseel Express", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-al-faisal-mandi-pty-ltd", "mid": "N57599", "name": "AL FAISAL MANDI PTY LTD", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-al-fayhaa-halal-chicken", "mid": "N55650", "name": "Al Fayhaa Halal Chicken", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-al-houda-mixed-business", "mid": "N60825", "name": "Al Houda Mixed Business", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-al-jenan-bucthery-chipping-norton", "mid": "N59272", "name": "Al Jenan Bucthery Chipping Norton", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-al-jenan-butchery", "mid": "N55142", "name": "Al Jenan Butchery", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-al-jenna-butchery", "mid": "N54882", "name": "Al Jenna Butchery", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-al-nachar-catering", "mid": "N56079", "name": "Al Nachar Catering", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-al-jenan-butchery", "mid": "N55140 / N55560", "name": "AL-JENAN BUTCHERY", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-al-sultan-butchery", "mid": "N55193 / N58732", "name": "Al-Sultan Butchery", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-all-skills-college-pty-ltd", "mid": "N39979", "name": "ALL SKILLS COLLEGE PTY LTD", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-amazon-convenience-store-pty-ltd", "mid": "N60047", "name": "Amazon Convenience Store Pty Ltd", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-anna-cosmetics", "mid": "N55463 / N57194", "name": "Anna Cosmetics", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-atrium-cafe-sydney-pty-ltd", "mid": "N56760 / N57077", "name": "Atrium Cafe Sydney Pty Ltd", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-azalea-cafe-pty-ltd", "mid": "N57749", "name": "Azalea Cafe Pty Ltd", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-azucar-cafe", "mid": "N57206 / N57710", "name": "Azucar Cafe", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-baba-manoosh", "mid": "N57566 / N58128", "name": "Baba Manoosh", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-bankstown-lebanese-fruit-mixed-business", "mid": "N60194", "name": "Bankstown Lebanese Fruit & Mixed Business", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-bankstown-tyre-centre-and-mechanical-rep", "mid": "N59205", "name": "Bankstown tyre centre and mechanical repairs", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-barber-lounge-masters", "mid": "N55208", "name": "Barber Lounge Masters", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-baytouna-butcher", "mid": "N57508", "name": "Baytouna Butcher", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-baytouna-restaurant", "mid": "N55131 / N56076", "name": "Baytouna Restaurant", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-bear-brasserie", "mid": "N57143 / N57144", "name": "Bear Brasserie", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-bedouin-bakery", "mid": "N57161", "name": "Bedouin Bakery", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-belmore-mixed-mart", "mid": "N55410", "name": "Belmore Mixed Mart", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-belmore-tyre-centre", "mid": "N59136", "name": "Belmore Tyre Centre", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-bird-cage-cafe", "mid": "N56184", "name": "Bird Cage Cafe", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-bones-grills-pty-ltd", "mid": "N58867", "name": "Bones & Grills Pty Ltd", "sevenDay": true}, {"id": "gpv-broaster-chicken", "mid": "N54902", "name": "Broaster Chicken", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-broaster-chicken-bass-hill", "mid": "N56069", "name": "Broaster Chicken Bass Hill", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-broaster-chicken-hoxton-park", "mid": "N55074", "name": "Broaster Chicken Hoxton Park", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-broaster-chicken-lakemba", "mid": "N55648", "name": "Broaster Chicken Lakemba", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-budget-auto-salon", "mid": "N57836", "name": "Budget Auto Salon", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-burger-cartel", "mid": "N61392", "name": "Burger Cartel", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-burger-cartel-greenacre", "mid": "N61239", "name": "Burger Cartel Greenacre", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-butterfield-cookies-pty-ltd", "mid": "N57601", "name": "Butterfield Cookies Pty Ltd", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-cafe-on-the-boulevarde", "mid": "N38615", "name": "CAFE ON THE BOULEVARDE", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-caffeine-dough", "mid": "N57110 / N57111", "name": "Caffeine & Dough", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-caffetino-pty-ltd", "mid": "N57081 / N60486", "name": "Caffetino Pty Ltd", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-cedar-valley-meats", "mid": "N55674", "name": "Cedar Valley Meats", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-cesars-pizza-house", "mid": "N56314 / N56743", "name": "Cesars Pizza House", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-chester-hill-fish-market", "mid": "N56637 / N56657", "name": "Chester Hill Fish Market", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-chester-hill-hallal-meat", "mid": "N57367", "name": "Chester Hill Hallal Meat", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-choco-d-or", "mid": "N57912", "name": "Choco D’or", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-chullora-fruitland", "mid": "N55649", "name": "Chullora Fruitland", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-cigcity", "mid": "N58277", "name": "Cigcity", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-city-auto-locksmiths", "mid": "N55901", "name": "City Auto Locksmiths", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-cocktails-co", "mid": "N56847 / N57053", "name": "Cocktails & Co", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-crescent-poultry-pty-ltd", "mid": "N56255", "name": "Crescent Poultry Pty Ltd", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-dabbour-quality-meats", "mid": "N55194 / N55195", "name": "Dabbour Quality Meats", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-dadoun-butchery-and-restaurant", "mid": "N59157 / N60963", "name": "Dadoun Butchery and Restaurant", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-darwich-butchery-lakemba", "mid": "N55126 / N55646", "name": "Darwich Butchery Lakemba", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-darwich-butchery-pty-ltd", "mid": "N55125", "name": "DARWICH BUTCHERY PTY LTD", "sevenDay": true, "integrated": true, "defaultMachine": "P400"}, {"id": "gpv-darwich-meat-greenacre", "mid": "N55198 / N57580", "name": "Darwich Meat Greenacre", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-darwich-meats-co", "mid": "N55023", "name": "Darwich meats & co", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-dipacci-coffee", "mid": "N56451", "name": "Dipacci Coffee", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-discount-sports-supplements", "mid": "N57799", "name": "Discount Sports Supplements", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-dougies-grill-bankstown", "mid": "N59027", "name": "Dougies Grill Bankstown", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-dougies-grill-hurstville", "mid": "N58920", "name": "Dougies Grill Hurstville", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-dounyas-bakery", "mid": "N54741", "name": "DOUNYAS BAKERY", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-down-under-sheepskin-factory", "mid": "N60893", "name": "Down Under Sheepskin Factory", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-down-under-ugg-boots", "mid": "V60897 / V60898", "name": "Down Under UGG Boots", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-dusty-pink-by-joumana", "mid": "N58458", "name": "Dusty Pink By Joumana", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-eagle-tyres", "mid": "N59197", "name": "Eagle Tyres", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-eagles-gym", "mid": "N56574", "name": "Eagles Gym", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-eastern-delights", "mid": "N55167", "name": "EASTERN DELIGHTS", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-eastern-mart-chullora", "mid": "N55138", "name": "Eastern Mart Chullora", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-eastern-mart-liverpool", "mid": "N55187", "name": "Eastern Mart Liverpool", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-eetswa-bbq", "mid": "N58477 / N59976", "name": "Eetswa BBQ", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-el-afraah-bakery", "mid": "N57661 / N57673", "name": "El Afraah Bakery", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-el-mineh-bakery-liverpool", "mid": "N60583 / N61520", "name": "El Mineh Bakery Liverpool", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-el-minieh-restaurant", "mid": "N60730", "name": "El Minieh Restaurant", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-engadine-chargrill-chickens", "mid": "N58488", "name": "ENGADINE CHARGRILL CHICKENS", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-erciyes-express", "mid": "N57633", "name": "Erciyes Express", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-erciyes-restaurant", "mid": "N56691 / N56693", "name": "Erciyes Restaurant", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-espresso-t3-pty-ltd", "mid": "N56767 / N57076", "name": "Espresso @ T3 Pty Ltd", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-euro-tyre-centre", "mid": "N59138", "name": "Euro Tyre Centre", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-extreme-indoor-gokarting-sydney", "mid": "N56514", "name": "Extreme Indoor Gokarting Sydney", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-feast-in-the-middle-east", "mid": "N60140 / N61389", "name": "Feast In The Middle East", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-four-seasons-revesby", "mid": "N55365", "name": "Four Seasons Revesby", "sevenDay": true, "integrated": true, "defaultMachine": "P400"}, {"id": "gpv-free-choice-tobacconist", "mid": "N54879 / N56697", "name": "Free Choice Tobacconist", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-golden-pide-pty-ltd", "mid": "N58804", "name": "Golden Pide Pty Ltd", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-goodbar-prestons", "mid": "N55492", "name": "Goodbar Prestons", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-goodbar-shell-harbour", "mid": "N55481", "name": "Goodbar Shell Harbour", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-goodbar-sydney", "mid": "N55480", "name": "Goodbar Sydney", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-gourmet-butcher-greenacre", "mid": "N59125", "name": "Gourmet Butcher Greenacre", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-granvile-el-rawda-bakery-and-cafe", "mid": "N58916", "name": "Granvile El-Rawda Bakery and Cafe", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-grill-masterz-newtown", "mid": "N57125", "name": "Grill Masterz Newtown", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-grillz-master", "mid": "N57054", "name": "Grillz Master", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-haala-catering-pty-ltd", "mid": "N60806", "name": "Haala Catering Pty Ltd", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-hafda-butchery-pty-ltd", "mid": "N55468 / N55546", "name": "HAFDA BUTCHERY PTY LTD", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-hajj-brothers-halal-butchery", "mid": "V57287", "name": "Hajj Brothers Halal Butchery", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-hamze-supermarket", "mid": "N55817", "name": "Hamze Supermarket", "sevenDay": true, "integrated": true, "defaultMachine": "P400"}, {"id": "gpv-home-escentials-co-pty-ltd", "mid": "N61684", "name": "Home Escentials Co Pty Ltd", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-icell-mobile", "mid": "N58464", "name": "Icell Mobile", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-inbound-t3-pty-ltd", "mid": "N57201 / N57709", "name": "Inbound @ T3 Pty Ltd", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-inbound-cafe-pty-ltd", "mid": "N56675 / N57080", "name": "Inbound Cafe Pty Ltd", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-injectology-by-nastazia", "mid": "N58494", "name": "Injectology By Nastazia", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-iv-plus-pty-ltd", "mid": "N58880", "name": "IV PLUS PTY LTD", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-jacobz-espresso-bar", "mid": "N57852", "name": "Jacobz Espresso Bar", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-jazz-pizza", "mid": "N54716 / N54998 / N55209", "name": "JAZZ PIZZA", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-jjt-investment-group-pty-ltd", "mid": "N55997", "name": "JJT INVESTMENT GROUP PTY LTD", "sevenDay": true}, {"id": "gpv-kaffiene-co", "mid": "N57165 / N57166", "name": "Kaffiene & Co", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-kahil-meat", "mid": "N57058 / N57061", "name": "Kahil Meat", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-kebab-masterz-newtown", "mid": "N59753", "name": "Kebab Masterz Newtown", "defaultMachine": "DX8000", "sevenDay": true}, {"id": "gpv-kilara-convenience-store", "mid": "N59699", "name": "Kilara Convenience Store", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-kiss-my-butter-bakers", "mid": "N57134 / N57135", "name": "Kiss My Butter Bakers", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-knafeh-r-us", "mid": "N55644", "name": "Knafeh R US", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-lil-coffee-bean-co", "mid": "N57800", "name": "Lil Coffee Bean & Co", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-loop-bagels", "mid": "N56874 / N57084", "name": "Loop Bagels", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-love-n-care", "mid": "N61241", "name": "Love N Care", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-manoosh-house", "mid": "N60794 / N61384", "name": "Manoosh House", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-marble-meats", "mid": "N58212", "name": "Marble Meats", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-marco-auto-locksmith", "mid": "N56265", "name": "Marco Auto Locksmith", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-mariner-pizza", "mid": "N55487", "name": "Mariner Pizza", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-mataam-al-mandi-campbelltown", "mid": "N57377", "name": "Mataam Al Mandi Campbelltown", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-mataam-al-mandi-lakemba", "mid": "N57370 / N57702", "name": "Mataam Al Mandi Lakemba", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-mataam-al-mandi-liverpool", "mid": "N57371 / N57704", "name": "Mataam Al Mandi Liverpool", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-mataam-al-mandi-merrylands", "mid": "N57638", "name": "Mataam Al Mandi Merrylands", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-mataam-al-mandi-punchbowl", "mid": "N57837", "name": "Mataam Al Mandi Punchbowl", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-mataam-al-mandi-wenty-pty-ltd", "mid": "N57662 / N57703", "name": "MATAAM AL MANDI WENTY PTY LTD", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-merciful-group", "mid": "N56520", "name": "Merciful Group", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-miami-pizza", "mid": "N58475", "name": "Miami Pizza", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-miami-pizza-express", "mid": "N60721", "name": "Miami Pizza Express", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-mina-bakery-sons", "mid": "N55189", "name": "Mina Bakery & Sons", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-minas-hair-salon", "mid": "N59686", "name": "Minas Hair Salon", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-miniah-one", "mid": "N55190", "name": "Miniah One", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-mira-mini-market", "mid": "N55046", "name": "Mira Mini Market", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-miss-carter-cafe-pty-ltd", "mid": "N59691", "name": "Miss Carter Cafe Pty Ltd", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-modkingz-wheels-tyres-performance", "mid": "N59832", "name": "Modkingz Wheels Tyres & Performance", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-mr-butcher", "mid": "N54718", "name": "Mr Butcher", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-mr-fresh-punchbowl", "mid": "N54701", "name": "Mr Fresh Punchbowl", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-mr-seafood", "mid": "N56669", "name": "Mr Seafood", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-mr-shawarma-campbeltown-pty-ltd", "mid": "N61679", "name": "Mr Shawarma Campbeltown Pty Ltd", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-my-choice-mart", "mid": "N55437", "name": "My Choice Mart", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-nour-fresh-produce-pty-ltd", "mid": "N57908 / N57916", "name": "Nour Fresh Produce Pty Ltd", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-olsen-place-fruit-veggie", "mid": "V57021 / V57022", "name": "Olsen Place Fruit & Veggie", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-omg-tyres", "mid": "N60104", "name": "OMG Tyres", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-omran-supermarket", "mid": "N58878", "name": "Omran Supermarket", "sevenDay": true, "integrated": true, "defaultMachine": "P400"}, {"id": "gpv-ooosh-bakery", "mid": "N56360 / N57091", "name": "OOOSH Bakery", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-pista-house-bella-vista", "mid": "N57635", "name": "Pista House Bella Vista", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-pista-house-harris-park-pty-ltd", "mid": "N57670 / N57701", "name": "PISTA HOUSE HARRIS PARK PTY LTD", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-pista-house-lakemba", "mid": "N57817", "name": "Pista House Lakemba", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-pista-house-wenty", "mid": "N57700", "name": "Pista House Wenty", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-pizza-on-the-boulevarde", "mid": "N58454", "name": "Pizza on the Boulevarde", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-purple-buns", "mid": "N56795 / N56796", "name": "Purple Buns", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-purple-dough", "mid": "N56783 / N56791", "name": "Purple Dough", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-purple-parrot-acai-mount-lawley", "mid": "N59083", "name": "Purple Parrot Acai Mount Lawley", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-purple-parrot-a-ai-australia", "mid": "N56779 / N56780", "name": "Purple Parrot Açai Australia", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-purple-parrot-a-ai-wollongong", "mid": "N58262", "name": "Purple Parrot Açai Wollongong", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-quick-shawarma", "mid": "N55077 / N56424", "name": "Quick Shawarma", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-regents-park-boxing-academy", "mid": "N57222", "name": "Regents Park Boxing Academy", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-regents-park-wholesaler", "mid": "N58106", "name": "Regents Park Wholesaler", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-rose-mixed-business", "mid": "N56085 / N56492", "name": "Rose Mixed Business", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-saddik-halal-meats", "mid": "N55376 / N56516", "name": "Saddik Halal Meats", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-sandstone-warehouse", "mid": "N54728", "name": "Sandstone Warehouse", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-seafood-delight", "mid": "N56224 / N56231", "name": "Seafood Delight", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-sheeshe-and-man-oushe", "mid": "N55676", "name": "Sheeshe and Man’oushe", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-shine-n-go-car-wash-wheel-repair", "mid": "N54983", "name": "Shine N Go Car Wash & Wheel Repair", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-smoke-n-go", "mid": "N55407", "name": "Smoke “n” Go", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-soiree-designs", "mid": "N58496", "name": "Soiree Designs", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-stix-caroline-springs", "mid": "V57342 / V57344", "name": "Stix Caroline Springs", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-stix-coburg", "mid": "V56999 / V57003", "name": "Stix Coburg", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-stix-craigeburn", "mid": "V57245 / V57246", "name": "STIX Craigeburn", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-stix-doncaster", "mid": "V56997 / V57004", "name": "Stix Doncaster", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-stone-oasis", "mid": "N54726", "name": "Stone Oasis", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-stone-palace", "mid": "N55430", "name": "Stone Palace", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-strathfield-tyre-centre", "mid": "N59183", "name": "Strathfield Tyre Centre", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-sufficient-energy", "mid": "V56688", "name": "Sufficient Energy", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-suhhtan-bakery", "mid": "N58200", "name": "Suhhtan Bakery", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-sung-ming-restaurant", "mid": "N59195", "name": "Sung Ming Restaurant", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-sydney-wheel-repairs-tyres", "mid": "N59598", "name": "SYDNEY WHEEL REPAIRS & TYRES", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-sydney-wide-distrubutors-pty-ltd", "mid": "N59780", "name": "Sydney Wide Distrubutors Pty Ltd", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-sydney-wings-things", "mid": "N57526 / N57527", "name": "Sydney Wings & Things", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-sydneymanoosh", "mid": "N57525 / N58130", "name": "SYDNEYMANOOSH", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "mrmsyscj", "mid": "N60880", "name": "Taste Catering", "address": "", "sevenDay": true, "integrated": false, "posName": "", "integrationType": "cloud", "contact": "", "defaultMachine": "DX8000"}, {"id": "gpv-taste-of-thai", "mid": "N57306", "name": "Taste Of Thai", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-taste-of-thai-domestic", "mid": "N56125 / N57088", "name": "Taste Of Thai Domestic", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-taste-of-thai-international", "mid": "N56128 / N57092", "name": "Taste Of Thai International", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-taste-of-thai-t3", "mid": "N56631", "name": "Taste Of Thai T3", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-the-artisanal-cafe", "mid": "N57871", "name": "THE ARTISANAL CAFE", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-the-candy-shop", "mid": "N57375 / N57379", "name": "The Candy Shop", "sevenDay": true, "integrated": true, "defaultMachine": "P400"}, {"id": "gpv-the-coffee-emporium-bankstown", "mid": "N57757 / N57758", "name": "The Coffee Emporium Bankstown", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-the-dart", "mid": "V58413", "name": "The Dart", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-the-happy-family-butcher", "mid": "N54778 / N60772", "name": "The Happy Family Butcher", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-the-meat-boss", "mid": "N54973", "name": "The Meat Boss", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-the-meat-room", "mid": "N60599", "name": "The Meat Room", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-the-meat-room-on-wheels", "mid": "N60896", "name": "The Meat Room On Wheels", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-the-shisha-shack", "mid": "N55075", "name": "The Shisha Shack", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-thyme-on-dalton", "mid": "V57062 / V57064", "name": "Thyme On Dalton", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-tilt-espresso-pty-ltd", "mid": "N56777 / N56786 / N57075 / N57083", "name": "Tilt Espresso Pty LTD", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-toast-n-roast", "mid": "N57365 / N57374", "name": "Toast N Roast", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-tobacco-point-camden", "mid": "N58251", "name": "Tobacco Point Camden", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-touch-of-lebanon", "mid": "N55030", "name": "Touch Of Lebanon", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-tropicana-cocktail", "mid": "N55391", "name": "Tropicana Cocktail", "sevenDay": true, "integrated": true, "defaultMachine": "P400"}, {"id": "gpv-tyres-excel", "mid": "N57213", "name": "Tyres Excel", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-tyres-excel-condell-park", "mid": "N55353", "name": "Tyres Excel Condell Park", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-tyres-excel-liverpool", "mid": "N58501", "name": "Tyres Excel Liverpool", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-ugg-boot-factory-auburn", "mid": "N60888", "name": "Ugg Boot Factory Auburn", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-valla-beach-hospitality", "mid": "N55115", "name": "Valla Beach Hospitality", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-veloce-expresso-pty-ltd", "mid": "N56674 / N57078", "name": "Veloce Expresso Pty Ltd", "sevenDay": true, "integrated": true, "defaultMachine": "DX8000"}, {"id": "gpv-veloce-international-pty-ltd", "mid": "N56684 / N57079", "name": "Veloce International Pty Ltd", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-villa-mart", "mid": "N56194", "name": "Villa Mart", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-villawood-fruit-market", "mid": "N56571 / N56572", "name": "Villawood Fruit Market", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-wild-child-eatery", "mid": "N57141 / N57142 / N57170 / N57171", "name": "Wild Child Eatery", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-wiley-s-convenience-store", "mid": "N57970", "name": "WILEY'S CONVENIENCE STORE", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-wok-granville-pty-ltd", "mid": "N60145", "name": "Wok Granville Pty Ltd", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-x-tra-cheese-bakery", "mid": "N55278", "name": "X-Tra Cheese Bakery", "sevenDay": true, "defaultMachine": "DX8000"}, {"id": "gpv-xs-espresso-chullora", "mid": "N55534 / N55806", "name": "XS Espresso Chullora", "sevenDay": true, "integrated": true, "defaultMachine": "P400"}, {"id": "gpv-xtra-crispy-aurbun", "mid": "N55767", "name": "Xtra Crispy Aurbun", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}, {"id": "gpv-xtra-crispy-merrylands", "mid": "N55596", "name": "Xtra Crispy Merrylands", "sevenDay": true, "integrated": true, "defaultMachine": "PAX A920"}];
+
+function loadMerchants() {
+  let saved = [];
+  try {
+    const raw = localStorage.getItem("merchants");
+    saved = raw ? JSON.parse(raw) : [];
+  } catch {
+    saved = [];
+  }
+  // merge in built-in merchant list (saved entries win)
+  const byMid = {};
+  SEED_MERCHANTS.forEach((m) => (byMid[m.mid] = m));
+  saved.forEach((m) => (byMid[m.mid] = { ...byMid[m.mid], ...m }));
+  return Object.values(byMid);
+}
+function loadHistory() {
+  try {
+    const raw = localStorage.getItem("ticketHistory");
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+function saveHistory(list) {
+  try {
+    localStorage.setItem("ticketHistory", JSON.stringify(list));
+  } catch (e) {
+    console.error("history save failed", e);
+  }
+}
+function saveMerchants(list) {
+  try {
+    localStorage.setItem("merchants", JSON.stringify(list));
+  } catch (e) {
+    console.error("save failed", e);
+  }
+}
+
+// ---------- email builder ----------
+function buildEmail(mList, opts) {
+  const {
+    ticketType,
+    machine,
+    mode,
+    extraNotes,
+    integrationDay,
+    integrationSlot,
+    qty,
+    plan,
+    customVisa,
+    customDebit,
+    customAmex,
+    earnRate,
+    refundAmount,
+    refundLimit,
+  } = opts;
+  const m = mList[0];
+  const multi = mList.length > 1;
+  const isIntegrated = mode === "Integrated";
+  const n = qty || 1;
+
+  const subjectWho = multi
+    ? `${
+        mList.length <= 4 ? mList.map((x) => x.mid).join(", ") : "Multiple MIDs"
+      } & ${m.name} (${mList.length} sites)`
+    : `${m.mid} & ${m.name}`;
+
+  let subject = "";
+  const lines = [];
+  lines.push("Hi Team,");
+  lines.push("");
+
+  if (ticketType === "Machine allocation") {
+    subject = `${subjectWho} - ${n > 1 ? n + " x " : ""}${machine} terminal allocation`;
+    const machinePhrase = n > 1 ? `${n} x ${machine} terminals` : `a ${machine}`;
+    const modePhrase =
+      machine === "DX8000"
+        ? "Standalone Mode"
+        : machine === "P400"
+        ? "Integrated"
+        : mode;
+    if (multi) {
+      lines.push(
+        `Merchant requests to allocate ${machinePhrase} to each of the following ${mList.length} sites. ( ${modePhrase} )`
+      );
+      lines.push("");
+      mList.forEach((x, i) => {
+        lines.push(
+          `${i + 1}. ${x.name} — MID ${x.mid}${
+            x.sevenDay ? " ( 7 day settlement )" : ""
+          }`
+        );
+        lines.push(`Trading Address: ${x.address}`);
+        lines.push("");
+      });
+      if (mList.some((x) => x.sevenDay)) {
+        lines.push("For the sites on 7 day settlement:");
+        lines.push("7 Day Settlement");
+        lines.push("Extended Settlement Enabled");
+        lines.push("Split Payment Enabled");
+        lines.push("");
+      }
+      lines.push("MCR Enabled");
+      lines.push("Full Surcharge Enabled");
+      lines.push("$0 Rental Charge");
+    } else {
+      lines.push(
+        `Merchant requests to allocate ${machinePhrase} to his site. ( ${modePhrase} )`
+      );
+      lines.push("");
+      if (m.sevenDay) {
+        lines.push("7 Day Settlement");
+        lines.push("Extended Settlement Enabled");
+        lines.push("Split Payment Enabled");
+        lines.push("");
+      }
+      lines.push("MCR Enabled");
+      lines.push("Full Surcharge Enabled");
+      lines.push("$0 Rental Charge");
+      lines.push("");
+      lines.push(`Trading Address: ${m.address}`);
+    }
+    if (isIntegrated) {
+      lines.push("");
+      lines.push(`Integration (${m.integrationType || "[cloud or on prem]"}) with ${m.posName || "[POS name]"}`);
+      lines.push(`Best Contact for integration: ${m.contact || "[contact]"}`);
+      if (integrationDay || integrationSlot) {
+        lines.push(
+          `Requested integration booking: ${integrationDay || "[day]"}${
+            integrationSlot ? `, ${integrationSlot}` : ""
+          }`
+        );
+      }
+    }
+  } else if (ticketType === "Change rates") {
+    subject = `${subjectWho} - Rate change request`;
+    const pct = (v) => (v ? String(v).replace("%", "").trim() : "[ % ]");
+    if (multi) {
+      lines.push(
+        `Merchant requests to change the rates across the following ${mList.length} accounts:`
+      );
+      lines.push("");
+      mList.forEach((x, i) => {
+        lines.push(`${i + 1}. ${x.name} — MID ${x.mid}`);
+      });
+    } else {
+      lines.push(`Merchant requests to change the rates on his account.`);
+    }
+    lines.push("");
+    let earnValue;
+    if (plan === "Black Plan") {
+      lines.push("New Plan: Black Plan");
+      lines.push("2.49% Visa, MasterCard, Debit & AMEX");
+      earnValue = "1";
+    } else if (plan === "Gold Plan") {
+      lines.push("New Plan: Gold Plan");
+      lines.push("1.89% Visa, MasterCard & Debit");
+      lines.push("2.1% AMEX");
+      earnValue = "2";
+    } else {
+      lines.push("New Plan: Custom Rate");
+      lines.push(`${pct(customVisa)}% Visa & MasterCard`);
+      lines.push(`${pct(customDebit)}% Debit`);
+      lines.push(`${pct(customAmex)}% AMEX`);
+      earnValue = earnRate ? String(earnRate).replace("$", "").trim() : "[ amount ]";
+    }
+    lines.push("");
+    lines.push("Full Surcharge Enabled");
+    lines.push("");
+    lines.push(
+      `Earn Rate: 1 Qantas Point for every $${earnValue} the merchant earns`
+    );
+  } else if (ticketType === "Order paper rolls") {
+    subject = `${subjectWho} - Paper roll order`;
+    if (multi) {
+      lines.push(
+        `Merchant requests x${n} pack${
+          n > 1 ? "s" : ""
+        } of paper rolls to be sent to each of the following sites:`
+      );
+      lines.push("");
+      mList.forEach((x, i) => {
+        lines.push(`${i + 1}. ${x.name} — MID ${x.mid}`);
+        lines.push(`Trading Address: ${x.address}`);
+        lines.push("");
+      });
+      while (lines[lines.length - 1] === "") lines.pop();
+    } else {
+      lines.push(
+        `Merchant requests x${n} pack${
+          n > 1 ? "s" : ""
+        } of paper rolls to be sent to his site.`
+      );
+      lines.push("");
+      lines.push(`Trading Address: ${m.address}`);
+    }
+  } else if (ticketType === "Enable MOTO") {
+    subject = `${subjectWho} - MOTO enablement`;
+    if (multi) {
+      lines.push(
+        `Merchant requests to enable MOTO on all machines on Phoenix across the following ${mList.length} accounts:`
+      );
+      lines.push("");
+      mList.forEach((x, i) => {
+        lines.push(`${i + 1}. ${x.name} — MID ${x.mid}`);
+      });
+    } else {
+      lines.push(
+        `Merchant requests to enable MOTO on all machines on Phoenix on his account.`
+      );
+    }
+    lines.push("");
+    lines.push("Please provide the MOTO password.");
+  } else if (ticketType === "Enable refunds") {
+    subject = `${subjectWho} - Refund enablement`;
+    const money = (v) =>
+      v ? String(v).replace("$", "").trim() : "[ amount ]";
+    if (multi) {
+      lines.push(
+        `Merchant requests to enable refunds on all machines on Phoenix across the following ${mList.length} accounts:`
+      );
+      lines.push("");
+      mList.forEach((x, i) => {
+        lines.push(`${i + 1}. ${x.name} — MID ${x.mid}`);
+      });
+    } else {
+      lines.push(
+        `Merchant requests to enable refunds on all machines on Phoenix on his account.`
+      );
+    }
+    lines.push("");
+    lines.push(`Refund Amount: $${money(refundAmount)}`);
+    lines.push(`Refund Limit Per Day: $${money(refundLimit)}`);
+  }
+
+  if (extraNotes.trim()) {
+    lines.push("");
+    lines.push(extraNotes.trim());
+  }
+  lines.push("");
+  lines.push("Thank you team.");
+
+  return { subject, body: lines.join("\n") };
+}
+
+// ---------- small ui bits ----------
+function Field({ label, children }) {
+  return (
+    <div style={{ display: "block", marginBottom: 14 }}>
+      <div
+        style={{
+          fontSize: 11,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          color: S.dim,
+          marginBottom: 6,
+          fontWeight: 600,
+        }}
+      >
+        {label}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+const inputStyle = {
+  width: "100%",
+  boxSizing: "border-box",
+  background: S.panel2,
+  border: `1px solid ${S.line}`,
+  borderRadius: 10,
+  color: S.ink,
+  padding: "12px 14px",
+  fontSize: 16,
+  outline: "none",
+  WebkitAppearance: "none",
+  appearance: "none",
+  touchAction: "manipulation",
+};
+
+function Toggle({ on, onChange, labelOn, labelOff }) {
+  return (
+    <button
+      onClick={() => onChange(!on)}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        background: "none",
+        border: "none",
+        cursor: "pointer",
+        padding: 0,
+        color: S.ink,
+        fontSize: 15,
+      }}
+    >
+      <span
+        style={{
+          width: 44,
+          height: 26,
+          borderRadius: 13,
+          background: on ? S.green : S.line,
+          position: "relative",
+          transition: "background 0.15s",
+          flexShrink: 0,
+        }}
+      >
+        <span
+          style={{
+            position: "absolute",
+            top: 3,
+            left: on ? 21 : 3,
+            width: 20,
+            height: 20,
+            borderRadius: "50%",
+            background: "#fff",
+            transition: "left 0.15s",
+          }}
+        />
+      </span>
+      {on ? labelOn : labelOff}
+    </button>
+  );
+}
+
+function Pills({ options, value, onChange }) {
+  return (
+    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      {options.map((o) => (
+        <button
+          key={o}
+          onClick={() => onChange(o)}
+          style={{
+            padding: "10px 16px",
+            borderRadius: 999,
+            border: `1px solid ${value === o ? S.accent : S.line}`,
+            background: value === o ? "rgba(79,77,220,0.10)" : S.panel2,
+            color: value === o ? S.accentSoft : S.ink,
+            fontSize: 14,
+            fontWeight: value === o ? 700 : 400,
+            cursor: "pointer",
+          }}
+        >
+          {o}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Stepper({ value, onChange, min = 1, max = 20 }) {
+  const btn = {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    border: `1px solid ${S.line}`,
+    background: S.panel2,
+    color: S.ink,
+    fontSize: 22,
+    cursor: "pointer",
+  };
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+      <button onClick={() => onChange(Math.max(min, value - 1))} style={btn}>
+        −
+      </button>
+      <input
+        value={value}
+        onChange={(e) => {
+          const v = parseInt(e.target.value.replace(/\D/g, ""), 10);
+          onChange(isNaN(v) ? min : Math.min(max, Math.max(min, v)));
+        }}
+        inputMode="numeric"
+        style={{
+          fontSize: 20,
+          fontWeight: 800,
+          width: 64,
+          textAlign: "center",
+          background: "transparent",
+          border: "none",
+          borderBottom: `2px solid ${S.line}`,
+          color: S.ink,
+          outline: "none",
+          padding: "4px 0",
+        }}
+      />
+      <button onClick={() => onChange(Math.min(max, value + 1))} style={btn}>
+        +
+      </button>
+    </div>
+  );
+}
+
+// ---------- merchant form ----------
+function MerchantForm({ initial, onSave, onCancel }) {
+  const [m, setM] = useState(initial);
+  const set = (k, v) => setM((p) => ({ ...p, [k]: v }));
+  const valid = m.mid.trim() && m.name.trim();
+
+  return (
+    <div>
+      <Field label="MID number">
+        <input
+          style={inputStyle}
+          value={m.mid}
+          onChange={(e) => set("mid", e.target.value)}
+          placeholder="e.g. 8834521"
+          inputMode="numeric"
+        />
+      </Field>
+      <Field label="Merchant / business name">
+        <input
+          style={inputStyle}
+          value={m.name}
+          onChange={(e) => set("name", e.target.value)}
+          placeholder="e.g. Tony's Butchery"
+        />
+      </Field>
+      <Field label="Trading address">
+        <textarea
+          style={{ ...inputStyle, minHeight: 64, resize: "vertical" }}
+          value={m.address}
+          onChange={(e) => set("address", e.target.value)}
+          placeholder="Street, suburb, state, postcode"
+        />
+      </Field>
+      <Field label="Usual machine">
+        <Pills
+          options={MACHINES}
+          value={m.defaultMachine || "DX8000"}
+          onChange={(v) => set("defaultMachine", v)}
+        />
+      </Field>
+      <div style={{ marginBottom: 16 }}>
+        <Toggle
+          on={m.sevenDay}
+          onChange={(v) => set("sevenDay", v)}
+          labelOn="On 7 day settlement"
+          labelOff="Standard settlement"
+        />
+      </div>
+      <div style={{ marginBottom: 16 }}>
+        <Toggle
+          on={m.integrated}
+          onChange={(v) => set("integrated", v)}
+          labelOn="Integrated merchant"
+          labelOff="Standalone only"
+        />
+      </div>
+      {m.integrated && (
+        <div style={{ borderLeft: `2px solid ${S.accent}`, paddingLeft: 14, marginBottom: 8 }}>
+          <Field label="POS name">
+            <input
+              style={inputStyle}
+              value={m.posName}
+              onChange={(e) => set("posName", e.target.value)}
+              placeholder="e.g. Idealpos"
+            />
+          </Field>
+          <Field label="Integration type">
+            <Pills
+              options={["cloud", "on prem"]}
+              value={m.integrationType}
+              onChange={(v) => set("integrationType", v)}
+            />
+          </Field>
+          <Field label="Best contact for integration">
+            <input
+              style={inputStyle}
+              value={m.contact}
+              onChange={(e) => set("contact", e.target.value)}
+              placeholder="Name & phone number"
+            />
+          </Field>
+        </div>
+      )}
+      <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+        <button
+          onClick={() => valid && onSave(m)}
+          style={{
+            flex: 1,
+            padding: "13px 0",
+            borderRadius: 10,
+            border: "none",
+            background: valid ? S.accent : S.line,
+            color: valid ? "#fff" : S.dim,
+            fontSize: 15,
+            fontWeight: 700,
+            cursor: valid ? "pointer" : "default",
+          }}
+        >
+          Save merchant
+        </button>
+        <button
+          onClick={onCancel}
+          style={{
+            padding: "13px 18px",
+            borderRadius: 10,
+            border: `1px solid ${S.line}`,
+            background: "none",
+            color: S.dim,
+            fontSize: 15,
+            cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function tagStyle(color) {
+  return {
+    fontSize: 12,
+    padding: "4px 10px",
+    borderRadius: 999,
+    border: `1px solid ${color}`,
+    color,
+  };
+}
+function smallBtn(color, filled = false) {
+  return {
+    padding: "8px 14px",
+    borderRadius: 8,
+    border: filled ? "none" : `1px solid ${color}`,
+    background: filled ? color : "none",
+    color: filled ? "#fff" : "#6E7391",
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+  };
+}
+
+// ---------- main app ----------
+function App() {
+  const [merchants, setMerchants] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+  const [tab, setTab] = useState("ticket");
+  const [editing, setEditing] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [search, setSearch] = useState("");
+
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [merchantQuery, setMerchantQuery] = useState("");
+  const [ticketType, setTicketType] = useState("Machine allocation");
+  const [plan, setPlan] = useState("Black Plan");
+  const [customVisa, setCustomVisa] = useState("");
+  const [customDebit, setCustomDebit] = useState("");
+  const [customAmex, setCustomAmex] = useState("");
+  const [earnRate, setEarnRate] = useState("");
+  const [refundAmount, setRefundAmount] = useState("");
+  const [refundLimit, setRefundLimit] = useState("");
+  const [machine, setMachine] = useState("DX8000");
+  const [qty, setQty] = useState(1);
+  const [mode, setMode] = useState("Standalone Mode");
+
+  const applyMerchantDefaults = (m) => {
+    if (!m) return;
+    const dm = m.defaultMachine || "DX8000";
+    setMachine(dm);
+    setMode(dm === "P400" ? "Integrated" : "Standalone Mode");
+    setQty(1);
+  };
+
+  const toggleMerchant = (id) => {
+    const already = selectedIds.includes(id);
+    const next = already
+      ? selectedIds.filter((x) => x !== id)
+      : [...selectedIds, id];
+    setSelectedIds(next);
+    if (!already && next.length === 1) {
+      applyMerchantDefaults(merchants.find((x) => x.id === id));
+    }
+  };
+  const [integrationDay, setIntegrationDay] = useState("");
+  const [integrationSlot, setIntegrationSlot] = useState("");
+  const [extraNotes, setExtraNotes] = useState("");
+  const [copied, setCopied] = useState("");
+  const [history, setHistory] = useState([]);
+  const [expandedId, setExpandedId] = useState(null);
+  const [confirmDeleteTicket, setConfirmDeleteTicket] = useState(null);
+  const [importText, setImportText] = useState("");
+  const [importMsg, setImportMsg] = useState("");
+
+  useEffect(() => {
+    setMerchants(loadMerchants());
+    setHistory(loadHistory());
+    setLoaded(true);
+  }, []);
+
+  const persist = (list) => {
+    setMerchants(list);
+    saveMerchants(list);
+  };
+
+  const selectedMerchants = selectedIds
+    .map((id) => merchants.find((x) => x.id === id))
+    .filter(Boolean);
+  const selected = selectedMerchants[0] || null;
+  const mq = merchantQuery.trim().toLowerCase();
+  const merchantResults = mq
+    ? merchants
+        .filter(
+          (x) =>
+            !selectedIds.includes(x.id) &&
+            (x.name.toLowerCase().includes(mq) ||
+              x.mid.toLowerCase().includes(mq))
+        )
+        .slice(0, 8)
+    : [];
+  const effectiveMode =
+    machine === "DX8000"
+      ? "Standalone Mode"
+      : machine === "P400"
+      ? "Integrated"
+      : mode;
+  const email = selectedMerchants.length
+    ? buildEmail(selectedMerchants, {
+        ticketType,
+        machine,
+        mode: effectiveMode,
+        extraNotes,
+        integrationDay,
+        integrationSlot,
+        qty,
+        plan,
+        customVisa,
+        customDebit,
+        customAmex,
+        earnRate,
+        refundAmount,
+        refundLimit,
+      })
+    : null;
+
+  const alreadyProcessed = email
+    ? history.some(
+        (t) => t.subject === email.subject && t.body === email.body
+      )
+    : false;
+
+  const copy = async (text, which) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+    setCopied(which);
+    setTimeout(() => setCopied(""), 1600);
+  };
+
+  const logTicket = () => {
+    if (!email) return;
+    if (
+      history.some(
+        (t) => t.subject === email.subject && t.body === email.body
+      )
+    )
+      return;
+    const entry = {
+      id: Date.now().toString(36),
+      at: new Date().toISOString(),
+      type: ticketType,
+      subject: email.subject,
+      body: email.body,
+    };
+    const list = [entry, ...history];
+    setHistory(list);
+    saveHistory(list);
+  };
+
+  const deleteTicket = (id) => {
+    const list = history.filter((x) => x.id !== id);
+    setHistory(list);
+    saveHistory(list);
+    setConfirmDeleteTicket(null);
+  };
+
+  const importBackup = (rawText) => {
+    try {
+      const source = typeof rawText === "string" ? rawText : importText;
+      // fix smart quotes from Notes/Mail and trim
+      let txt = source
+        .replace(/[\u201C\u201D\u201E\u2033]/g, '"')
+        .replace(/[\u2018\u2019\u2032]/g, "'")
+        .trim();
+      // if multiple backups got pasted together, take the first complete one
+      const start = txt.indexOf("{");
+      if (start === -1) throw new Error("no json");
+      let depth = 0;
+      let end = -1;
+      let inStr = false;
+      let esc = false;
+      for (let i = start; i < txt.length; i++) {
+        const c = txt[i];
+        if (esc) { esc = false; continue; }
+        if (c === "\\") { esc = true; continue; }
+        if (c === '"') { inStr = !inStr; continue; }
+        if (inStr) continue;
+        if (c === "{") depth++;
+        else if (c === "}") {
+          depth--;
+          if (depth === 0) { end = i + 1; break; }
+        }
+      }
+      if (end === -1) throw new Error("incomplete");
+      const data = JSON.parse(txt.slice(start, end));
+      let inc = Array.isArray(data.merchants) ? data.merchants : [];
+      if (inc.length === 0) {
+        // maybe a second, non-empty backup follows — try it
+        const rest = txt.slice(end);
+        const s2 = rest.indexOf("{");
+        if (s2 !== -1) {
+          try {
+            const d2 = JSON.parse(rest.slice(s2));
+            if (Array.isArray(d2.merchants) && d2.merchants.length) inc = d2.merchants;
+          } catch (e2) {}
+        }
+      }
+      const byMid = {};
+      merchants.forEach((x) => (byMid[x.mid] = x));
+      let added = 0;
+      let updated = 0;
+      inc.forEach((x) => {
+        if (!x || !x.mid) return;
+        if (byMid[x.mid]) {
+          byMid[x.mid] = { ...byMid[x.mid], ...x, id: byMid[x.mid].id };
+          updated++;
+        } else {
+          byMid[x.mid] = {
+            ...x,
+            id:
+              x.id ||
+              Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+          };
+          added++;
+        }
+      });
+      persist(Object.values(byMid));
+      let histNote = "";
+      if (Array.isArray(data.history) && data.history.length) {
+        const ids = new Set(history.map((t) => t.id));
+        const extra = data.history.filter((t) => t && t.id && !ids.has(t.id));
+        if (extra.length) {
+          const mergedH = [...extra, ...history].sort((a, b) =>
+            (b.at || "").localeCompare(a.at || "")
+          );
+          setHistory(mergedH);
+          saveHistory(mergedH);
+          histNote = ` ${extra.length} history entries added.`;
+        }
+      }
+      setImportMsg(`Imported: ${added} new, ${updated} updated.` + histNote);
+      setImportText("");
+    } catch {
+      setImportMsg(
+        "Couldn't read that backup — make sure you pasted the full text."
+      );
+    }
+  };
+
+  const filtered = merchants.filter(
+    (m) =>
+      m.name.toLowerCase().includes(search.toLowerCase()) ||
+      m.mid.includes(search)
+  );
+
+  const tabBtn = (id, label) => (
+    <button
+      onClick={() => {
+        setTab(id);
+        setEditing(null);
+      }}
+      style={{
+        flex: 1,
+        padding: "12px 0",
+        border: "none",
+        background: "none",
+        color: tab === id ? S.ink : S.dim,
+        fontSize: 15,
+        fontWeight: tab === id ? 700 : 400,
+        borderBottom: `2px solid ${tab === id ? S.accent : "transparent"}`,
+        cursor: "pointer",
+      }}
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: S.bg,
+        color: S.ink,
+        fontFamily:
+          "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      }}
+    >
+      <div style={{ maxWidth: 520, margin: "0 auto", padding: "0 16px 60px" }}>
+        <div
+          style={{
+            padding: "22px 0 10px",
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+          }}
+        >
+          <svg width="46" height="46" viewBox="0 0 100 100" aria-hidden="true">
+            <rect x="8" y="8" width="24" height="84" rx="10" fill="#4F4DDC" />
+            <rect x="8" y="68" width="58" height="24" rx="10" fill="#4F4DDC" />
+            <rect x="38" y="8" width="21" height="21" rx="6" fill="#FF9A0C" />
+            <rect x="66" y="8" width="26" height="46" rx="10" fill="#14ADCD" />
+            <rect x="38" y="34" width="42" height="20" rx="9" fill="#14ADCD" />
+            <rect x="66" y="62" width="21" height="21" rx="6" fill="#FF5139" />
+          </svg>
+          <div>
+            <div
+              style={{
+                fontSize: 11,
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                color: S.accentSoft,
+                fontWeight: 700,
+              }}
+            >
+              Live Payments
+            </div>
+            <h1 style={{ fontSize: 24, fontWeight: 800, margin: "2px 0 0" }}>
+              Ticket Builder
+            </h1>
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            borderBottom: `1px solid ${S.line}`,
+            marginBottom: 20,
+          }}
+        >
+          {tabBtn("ticket", "New ticket")}
+          {tabBtn("merchants", `Merchants (${merchants.length})`)}
+          {tabBtn("history", `History (${history.length})`)}
+        </div>
+
+        {!loaded && <div style={{ color: S.dim }}>Loading…</div>}
+
+        {loaded && tab === "merchants" && (
+          <div>
+            {editing ? (
+              <div
+                style={{
+                  background: S.panel,
+                  border: `1px solid ${S.line}`,
+                  borderRadius: 14,
+                  padding: 18,
+                }}
+              >
+                <div style={{ fontWeight: 700, marginBottom: 16 }}>
+                  {editing.id ? "Edit merchant" : "Add merchant"}
+                </div>
+                <MerchantForm
+                  initial={editing}
+                  onCancel={() => setEditing(null)}
+                  onSave={(m) => {
+                    if (m.id) {
+                      persist(merchants.map((x) => (x.id === m.id ? m : x)));
+                    } else {
+                      persist([...merchants, { ...m, id: Date.now().toString(36) }]);
+                    }
+                    setEditing(null);
+                  }}
+                />
+              </div>
+            ) : (
+              <React.Fragment>
+                <button
+                  onClick={() => setEditing({ ...EMPTY_MERCHANT })}
+                  style={{
+                    width: "100%",
+                    padding: "13px 0",
+                    borderRadius: 10,
+                    border: "none",
+                    background: S.accent,
+                    color: "#fff",
+                    fontSize: 15,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    marginBottom: 16,
+                  }}
+                >
+                  + Add merchant
+                </button>
+                {merchants.length > 3 && (
+                  <input
+                    style={{ ...inputStyle, marginBottom: 14 }}
+                    placeholder="Search by name or MID"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                )}
+                {merchants.length === 0 && (
+                  <div
+                    style={{
+                      color: S.dim,
+                      textAlign: "center",
+                      padding: "40px 20px",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    No merchants yet. Add your first merchant and their details
+                    will be saved here for every future ticket.
+                  </div>
+                )}
+                {filtered.map((m) => (
+                  <div
+                    key={m.id}
+                    style={{
+                      background: S.panel,
+                      border: `1px solid ${S.line}`,
+                      borderRadius: 14,
+                      padding: "14px 16px",
+                      marginBottom: 10,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "baseline",
+                        gap: 8,
+                      }}
+                    >
+                      <div style={{ fontWeight: 700, fontSize: 16 }}>{m.name}</div>
+                      <div style={{ fontSize: 13, color: S.dim }}>MID {m.mid}</div>
+                    </div>
+                    <div style={{ fontSize: 13, color: S.dim, margin: "4px 0 10px" }}>
+                      {m.address || "No address saved"}
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 6,
+                        flexWrap: "wrap",
+                        marginBottom: 12,
+                      }}
+                    >
+                      <span style={tagStyle(m.sevenDay ? S.green : S.dim)}>
+                        {m.sevenDay ? "7 day settlement" : "Standard settlement"}
+                      </span>
+                      <span style={tagStyle(m.integrated ? S.accent : S.dim)}>
+                        {m.integrated
+                          ? m.posName
+                            ? `Has integration · ${m.posName}`
+                            : "Has integration"
+                          : "Standalone"}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        onClick={() => {
+                          setSelectedIds([m.id]);
+                          applyMerchantDefaults(m);
+                          setTab("ticket");
+                        }}
+                        style={smallBtn(S.accent, true)}
+                      >
+                        New ticket
+                      </button>
+                      <button onClick={() => setEditing({ ...m })} style={smallBtn(S.line)}>
+                        Edit
+                      </button>
+                      {confirmDelete === m.id ? (
+                        <button
+                          onClick={() => {
+                            persist(merchants.filter((x) => x.id !== m.id));
+                            setConfirmDelete(null);
+                          }}
+                          style={smallBtn(S.danger, true)}
+                        >
+                          Confirm delete
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDelete(m.id)}
+                          style={smallBtn(S.line)}
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <div
+                  style={{
+                    borderTop: `1px solid ${S.line}`,
+                    marginTop: 20,
+                    paddingTop: 16,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 11,
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                      color: S.dim,
+                      fontWeight: 600,
+                      marginBottom: 8,
+                    }}
+                  >
+                    Backup & transfer
+                  </div>
+                  <div
+                    style={{
+                      color: S.dim,
+                      fontSize: 13,
+                      lineHeight: 1.5,
+                      marginBottom: 10,
+                    }}
+                  >
+                    Data is saved per browser or app copy. To move your
+                    merchants to another device — or from Safari into the
+                    home-screen app — tap Copy backup here, then paste it into
+                    the Import box on the other side.
+                  </div>
+                  <button
+                    onClick={() =>
+                      copy(JSON.stringify({ merchants, history }), "backup")
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "13px 0",
+                      borderRadius: 10,
+                      border: `1px solid ${S.accent}`,
+                      background: "transparent",
+                      color: S.accent,
+                      fontSize: 14,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {copied === "backup"
+                      ? "Backup copied ✓ — now paste it on the other device"
+                      : "Copy backup"}
+                  </button>
+                  <label
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      boxSizing: "border-box",
+                      marginTop: 10,
+                      padding: "13px 0",
+                      borderRadius: 10,
+                      border: "none",
+                      background: S.accent,
+                      color: "#fff",
+                      fontSize: 14,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      textAlign: "center",
+                    }}
+                  >
+                    Import from file
+                    <input
+                      type="file"
+                      style={{ display: "none" }}
+                      onChange={(e) => {
+                        const f = e.target.files && e.target.files[0];
+                        if (!f) return;
+                        const r = new FileReader();
+                        r.onload = () => importBackup(String(r.result));
+                        r.readAsText(f);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                  <div
+                    style={{
+                      color: S.dim,
+                      fontSize: 12,
+                      textAlign: "center",
+                      margin: "10px 0 2px",
+                    }}
+                  >
+                    or paste a backup below
+                  </div>
+                  <textarea
+                    style={{
+                      ...inputStyle,
+                      minHeight: 56,
+                      resize: "vertical",
+                      marginTop: 6,
+                    }}
+                    value={importText}
+                    onChange={(e) => setImportText(e.target.value)}
+                    placeholder="Paste a backup here to import…"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
+                  />
+                  <button
+                    onClick={importBackup}
+                    style={{
+                      width: "100%",
+                      marginTop: 8,
+                      padding: "13px 0",
+                      borderRadius: 10,
+                      border: "none",
+                      background: importText.trim() ? S.accent : S.line,
+                      color: importText.trim() ? "#fff" : S.dim,
+                      fontSize: 14,
+                      fontWeight: 700,
+                      cursor: importText.trim() ? "pointer" : "default",
+                    }}
+                  >
+                    Import backup
+                  </button>
+                  {importMsg && (
+                    <div style={{ color: S.teal, fontSize: 13, marginTop: 8 }}>
+                      {importMsg}
+                    </div>
+                  )}
+                </div>
+              </React.Fragment>
+            )}
+          </div>
+        )}
+
+        {loaded && tab === "history" && (
+          <div>
+            {history.length === 0 && (
+              <div
+                style={{
+                  color: S.dim,
+                  textAlign: "center",
+                  padding: "40px 20px",
+                  lineHeight: 1.5,
+                }}
+              >
+                No tickets yet. Tap "Mark as processed" on a new ticket and
+                it will be saved here.
+              </div>
+            )}
+            {history.map((t) => (
+              <div
+                key={t.id}
+                style={{
+                  background: S.panel,
+                  border: `1px solid ${S.line}`,
+                  borderRadius: 14,
+                  padding: "14px 16px",
+                  marginBottom: 10,
+                }}
+              >
+                <div style={{ fontSize: 12, color: S.dim, marginBottom: 4 }}>
+                  {new Date(t.at).toLocaleString("en-AU", {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                  {" · "}
+                  {t.type}
+                </div>
+                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 10 }}>
+                  {t.subject}
+                </div>
+                {expandedId === t.id && (
+                  <div
+                    style={{
+                      background: S.panel2,
+                      borderRadius: 10,
+                      padding: "12px 14px",
+                      fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                      fontSize: 12.5,
+                      lineHeight: 1.55,
+                      whiteSpace: "pre-wrap",
+                      marginBottom: 10,
+                      color: S.ink,
+                    }}
+                  >
+                    {t.body}
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button
+                    onClick={() =>
+                      setExpandedId(expandedId === t.id ? null : t.id)
+                    }
+                    style={smallBtn(S.line)}
+                  >
+                    {expandedId === t.id ? "Hide" : "View"}
+                  </button>
+                  <button
+                    onClick={() => copy(t.body, "hist-" + t.id)}
+                    style={smallBtn(S.accent, true)}
+                  >
+                    {copied === "hist-" + t.id ? "Copied ✓" : "Copy body"}
+                  </button>
+                  {confirmDeleteTicket === t.id ? (
+                    <button
+                      onClick={() => deleteTicket(t.id)}
+                      style={smallBtn(S.danger, true)}
+                    >
+                      Confirm delete
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmDeleteTicket(t.id)}
+                      style={smallBtn(S.line)}
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {loaded && tab === "ticket" && (
+          <div>
+            {merchants.length === 0 ? (
+              <div
+                style={{
+                  color: S.dim,
+                  textAlign: "center",
+                  padding: "40px 20px",
+                  lineHeight: 1.5,
+                }}
+              >
+                Add a merchant first — go to the Merchants tab.
+              </div>
+            ) : (
+              <React.Fragment>
+                <Field
+                  label={
+                    selectedIds.length > 1
+                      ? `Merchants (${selectedIds.length} selected — one ticket)`
+                      : "Merchant"
+                  }
+                >
+                  <div>
+                    {selectedMerchants.length > 0 && (
+                      <div
+                        style={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: 8,
+                          marginBottom: 10,
+                        }}
+                      >
+                        {selectedMerchants.map((mm) => (
+                          <button
+                            key={mm.id}
+                            onClick={() => toggleMerchant(mm.id)}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                              padding: "9px 14px",
+                              borderRadius: 999,
+                              border: `1px solid ${S.accent}`,
+                              background: "rgba(79,77,220,0.10)",
+                              color: S.accent,
+                              fontSize: 14,
+                              fontWeight: 600,
+                              cursor: "pointer",
+                            }}
+                          >
+                            {mm.name}
+                            <span style={{ fontWeight: 800, fontSize: 16 }}>×</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <input
+                      style={inputStyle}
+                      value={merchantQuery}
+                      onChange={(e) => setMerchantQuery(e.target.value)}
+                      placeholder={`Search ${merchants.length} merchants by name or MID…`}
+                    />
+                    {mq !== "" && (
+                      <div style={{ marginTop: 8 }}>
+                        {merchantResults.map((mm) => (
+                          <button
+                            key={mm.id}
+                            onClick={() => toggleMerchant(mm.id)}
+                            style={{
+                              display: "flex",
+                              width: "100%",
+                              boxSizing: "border-box",
+                              alignItems: "center",
+                              gap: 10,
+                              textAlign: "left",
+                              padding: "12px 14px",
+                              marginBottom: 8,
+                              borderRadius: 10,
+                              border: `1px solid ${S.line}`,
+                              background: S.panel,
+                              color: S.ink,
+                              fontSize: 15,
+                              cursor: "pointer",
+                            }}
+                          >
+                            <span
+                              style={{
+                                color: S.accent,
+                                fontWeight: 800,
+                                fontSize: 18,
+                                lineHeight: 1,
+                              }}
+                            >
+                              +
+                            </span>
+                            <span style={{ flex: 1 }}>{mm.name}</span>
+                            <span style={{ color: S.dim, fontSize: 13 }}>
+                              MID {mm.mid}
+                            </span>
+                          </button>
+                        ))}
+                        {merchantResults.length === 0 && (
+                          <div style={{ color: S.dim, fontSize: 13, padding: "6px 2px" }}>
+                            No merchants match "{merchantQuery}". Check the
+                            Merchants tab to add them.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div style={{ color: S.dim, fontSize: 12, marginTop: 8 }}>
+                      Add more than one merchant to raise a single ticket for
+                      multiple sites (e.g. same owner).
+                    </div>
+                  </div>
+                </Field>
+
+                <Field label="Ticket type">
+                  <Pills
+                    options={TICKET_TYPES}
+                    value={ticketType}
+                    onChange={setTicketType}
+                  />
+                </Field>
+
+                {ticketType === "Machine allocation" && (
+                  <React.Fragment>
+                    <Field label="Machine">
+                      <Pills options={MACHINES} value={machine} onChange={setMachine} />
+                    </Field>
+
+                    <Field label="Number of terminals">
+                      <Stepper value={qty} onChange={setQty} />
+                    </Field>
+
+                    <Field label="Mode">
+                      {machine === "DX8000" ? (
+                        <div style={{ color: S.dim, fontSize: 14 }}>
+                          DX8000 is automatically standalone mode
+                        </div>
+                      ) : machine === "P400" ? (
+                        <div style={{ color: S.dim, fontSize: 14 }}>
+                          P400 is always integrated
+                        </div>
+                      ) : (
+                        <div>
+                          <Pills
+                            options={["Standalone Mode", "Integrated"]}
+                            value={mode}
+                            onChange={setMode}
+                          />
+                          {selected && selected.integrated && (
+                            <div
+                              style={{
+                                color: S.dim,
+                                fontSize: 13,
+                                marginTop: 8,
+                                lineHeight: 1.4,
+                              }}
+                            >
+                              This merchant has integration on their account —
+                              pick the right mode for this terminal.
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </Field>
+
+                {effectiveMode === "Integrated" && (
+                  <div style={{ borderLeft: `2px solid ${S.accent}`, paddingLeft: 14 }}>
+                    {selected && !selected.integrated && (
+                      <div
+                        style={{
+                          color: S.orange,
+                          fontSize: 13,
+                          marginBottom: 12,
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        This merchant has no integration details saved — the email
+                        will show placeholders. Edit the merchant to add POS name
+                        and contact.
+                      </div>
+                    )}
+                    <Field label="Requested integration day">
+                      <input
+                        style={inputStyle}
+                        value={integrationDay}
+                        onChange={(e) => setIntegrationDay(e.target.value)}
+                        placeholder="e.g. Wednesday 9 July"
+                      />
+                    </Field>
+                        <Field label="Booking slot">
+                          <Pills
+                            options={["Morning", "Afternoon"]}
+                            value={integrationSlot}
+                            onChange={setIntegrationSlot}
+                          />
+                        </Field>
+                      </div>
+                    )}
+                  </React.Fragment>
+                )}
+
+                {ticketType === "Change rates" && (
+                  <React.Fragment>
+                    <Field label="Plan">
+                      <Pills
+                        options={["Black Plan", "Gold Plan", "Custom Rate"]}
+                        value={plan}
+                        onChange={setPlan}
+                      />
+                    </Field>
+                    {plan === "Black Plan" && (
+                      <div style={{ color: S.dim, fontSize: 13, margin: "-6px 0 14px" }}>
+                        2.49% Visa, MasterCard, Debit & AMEX · Earn: 1
+                        Qantas Point per $1
+                      </div>
+                    )}
+                    {plan === "Gold Plan" && (
+                      <div style={{ color: S.dim, fontSize: 13, margin: "-6px 0 14px" }}>
+                        1.89% Visa, MasterCard & Debit · 2.1% AMEX · Earn:
+                        1 Qantas Point per $2
+                      </div>
+                    )}
+                    {plan === "Custom Rate" && (
+                      <div style={{ borderLeft: `2px solid ${S.accent}`, paddingLeft: 14 }}>
+                        <Field label="Visa & MasterCard %">
+                          <input
+                            style={inputStyle}
+                            value={customVisa}
+                            onChange={(e) => setCustomVisa(e.target.value)}
+                            placeholder="e.g. 1.75"
+                            inputMode="decimal"
+                          />
+                        </Field>
+                        <Field label="Debit %">
+                          <input
+                            style={inputStyle}
+                            value={customDebit}
+                            onChange={(e) => setCustomDebit(e.target.value)}
+                            placeholder="e.g. 0.95"
+                            inputMode="decimal"
+                          />
+                        </Field>
+                        <Field label="AMEX %">
+                          <input
+                            style={inputStyle}
+                            value={customAmex}
+                            onChange={(e) => setCustomAmex(e.target.value)}
+                            placeholder="e.g. 2.2"
+                            inputMode="decimal"
+                          />
+                        </Field>
+                      </div>
+                    )}
+                    {plan === "Custom Rate" && (
+                    <Field label="Qantas Points earn rate">
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ color: S.dim, fontSize: 14, whiteSpace: "nowrap" }}>
+                          1 point per $
+                        </span>
+                        <input
+                          style={{ ...inputStyle, maxWidth: 110 }}
+                          value={earnRate}
+                          onChange={(e) => setEarnRate(e.target.value)}
+                          placeholder="3 – 50"
+                          inputMode="decimal"
+                        />
+                        <span style={{ color: S.dim, fontSize: 14 }}>earned</span>
+                      </div>
+                    </Field>
+                    )}
+                  </React.Fragment>
+                )}
+
+                {ticketType === "Order paper rolls" && (
+                  <Field label="Packs of paper rolls">
+                    <Stepper value={qty} onChange={setQty} max={120} />
+                  </Field>
+                )}
+
+                {ticketType === "Enable refunds" && (
+                  <React.Fragment>
+                    <Field label="Refund amount ($)">
+                      <input
+                        style={inputStyle}
+                        value={refundAmount}
+                        onChange={(e) => setRefundAmount(e.target.value)}
+                        placeholder="e.g. 500"
+                        inputMode="decimal"
+                      />
+                    </Field>
+                    <Field label="Refund limit per day ($)">
+                      <input
+                        style={inputStyle}
+                        value={refundLimit}
+                        onChange={(e) => setRefundLimit(e.target.value)}
+                        placeholder="e.g. 1000"
+                        inputMode="decimal"
+                      />
+                    </Field>
+                  </React.Fragment>
+                )}
+
+                <Field label="Extra notes (optional)">
+                  <textarea
+                    style={{ ...inputStyle, minHeight: 56, resize: "vertical" }}
+                    value={extraNotes}
+                    onChange={(e) => setExtraNotes(e.target.value)}
+                    placeholder="Anything else for the support team"
+                  />
+                </Field>
+
+                {email && (
+                  <div style={{ marginTop: 24 }}>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        color: S.dim,
+                        fontWeight: 600,
+                        marginBottom: 8,
+                      }}
+                    >
+                      Email preview
+                    </div>
+                    <div
+                      style={{
+                        background: S.paper,
+                        color: S.paperInk,
+                        borderRadius: 14,
+                        padding: "16px 18px",
+                        fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                        fontSize: 13,
+                        lineHeight: 1.55,
+                        boxShadow: "0 6px 20px rgba(35,38,43,0.10)", border: `1px solid ${S.line}`,
+                      }}
+                    >
+                      <div
+                        style={{
+                          paddingBottom: 10,
+                          marginBottom: 10,
+                          borderBottom: "1px dashed #C9C5B8",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {email.subject}
+                      </div>
+                      <div style={{ whiteSpace: "pre-wrap" }}>{email.body}</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+                      <button
+                        onClick={() => copy(email.subject, "subject")}
+                        style={{
+                          flex: 1,
+                          padding: "13px 0",
+                          borderRadius: 10,
+                          border: `1px solid ${S.line}`,
+                          background: S.panel2,
+                          color: copied === "subject" ? S.green : S.ink,
+                          fontSize: 14,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {copied === "subject" ? "Copied ✓" : "Copy subject"}
+                      </button>
+                      <button
+                        onClick={() => copy(email.body, "body")}
+                        style={{
+                          flex: 1.4,
+                          padding: "13px 0",
+                          borderRadius: 10,
+                          border: "none",
+                          background: copied === "body" ? S.green : S.accent,
+                          color: "#fff",
+                          fontSize: 14,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {copied === "body" ? "Copied ✓" : "Copy email body"}
+                      </button>
+                    </div>
+                    <button
+                      onClick={logTicket}
+                      style={{
+                        width: "100%",
+                        marginTop: 10,
+                        padding: "13px 0",
+                        borderRadius: 10,
+                        border: alreadyProcessed
+                          ? "none"
+                          : `1px solid ${S.teal}`,
+                        background: alreadyProcessed ? S.teal : "transparent",
+                        color: alreadyProcessed ? "#fff" : S.teal,
+                        fontSize: 14,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {alreadyProcessed
+                        ? "Processed ✓ — saved to history"
+                        : "Mark as processed"}
+                    </button>
+                  </div>
+                )}
+              </React.Fragment>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
